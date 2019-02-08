@@ -23,6 +23,7 @@ public class LogstashDestination: BaseDestination  {
     var socketManager: AsyncSocketManager!
     private var useHttpPost: Bool = false
     private var postUrl: URL!
+    private var timeout: TimeInterval!
     
     @available(*, unavailable)
     override init() {
@@ -34,6 +35,7 @@ public class LogstashDestination: BaseDestination  {
         self.logActivity = logActivity
         self.logDispatchQueue.maxConcurrentOperationCount = 1
         self.useHttpPost = URL(string: host)?.scheme!.starts(with: "http") ?? false
+        self.timeout = timeout
         
         self.socketManager = AsyncSocketManager(host: host, port: port, timeout: timeout, delegate: self, logActivity: logActivity, allowUntrustedServer: allowUntrustedServer)
         
@@ -128,7 +130,7 @@ public class LogstashDestination: BaseDestination  {
             
             do {
                 try outputData.write(to: filename, options: [])
-                self.socketManager.post(url: self.postUrl, filename: filename, token: self.logzioTokenKey, completionHandler: { error in
+                self.socketManager.post(url: self.postUrl, filename: filename, token: self.logzioTokenKey, timeout: self.timeout, completionHandler: { error in
                     // remove our log file
                     try? FileManager.default.removeItem(at: filename)
                     

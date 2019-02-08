@@ -67,13 +67,14 @@ class AsyncSocketManager: NSObject {
         }
     }
     
-    func post(url: URL, filename: URL, token: String, completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+    func post(url: URL, filename: URL, token: String, timeout: TimeInterval, completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
         //create the session object
         let session = URLSession.shared
         
         //now create the URLRequest object using the url object
         var request = URLRequest(url: url)
         request.httpMethod = "POST" //set http method as POST
+        request.timeoutInterval = timeout
         
         var data = try! String(contentsOf: filename).data(using: String.Encoding.utf8)!
         let boundary = "Snowbot-\(NSUUID().uuidString)"
