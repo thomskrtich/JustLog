@@ -21,6 +21,8 @@ public class LogstashDestination: BaseDestination  {
     var logActivity: Bool = false
     let logDispatchQueue = OperationQueue()
     var socketManager: AsyncSocketManager!
+    private var useHttpPost: Bool = false
+    private var postUrl: URL!
     
     @available(*, unavailable)
     override init() {
@@ -31,7 +33,14 @@ public class LogstashDestination: BaseDestination  {
         super.init()
         self.logActivity = logActivity
         self.logDispatchQueue.maxConcurrentOperationCount = 1
+        self.useHttpPost = URL(string: host)?.scheme!.starts(with: "http") ?? false
+        
         self.socketManager = AsyncSocketManager(host: host, port: port, timeout: timeout, delegate: self, logActivity: logActivity, allowUntrustedServer: allowUntrustedServer)
+        
+        if (self.useHttpPost) {
+            let url = String(format: "%@:%u", host, port)
+            self.postUrl = URL(string: url)!
+        }
     }
     
     deinit {
@@ -53,6 +62,13 @@ public class LogstashDestination: BaseDestination  {
             if let logzioToken = logzioToken {
                 flattened = flattened.merged(with: [logzioTokenKey: logzioToken])
             }
+            
+            var now = NSDate()
+            var formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            flattened["@timestamp"] = formatter.string(from: Date())
+            
             addLog(flattened)
         }
         
@@ -60,6 +76,11 @@ public class LogstashDestination: BaseDestination  {
     }
 
     public func forceSend(_ completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+        
+        if self.logsToShip.count != 0 && self.useHttpPost {
+            self.postLogs(completionHandler)
+            return
+        }
         
         if self.logsToShip.count == 0 || self.socketManager.isConnected() {
             completionHandler(nil)
@@ -88,6 +109,50 @@ public class LogstashDestination: BaseDestination  {
         }
     }
     
+    func postLogs(_ completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+        
+        self.logDispatchQueue.addOperation{ [weak self] in
+            
+            guard let `self` = self else { return }
+            
+            let filename = self.getDocumentsDirectory().appendingPathComponent("justlog_\(arc4random()).log")
+            var outputData = Data()
+            var sentKeys = [Int]()
+            
+            // which lets the caller move editing to any position within the file by supplying an offset
+            for log in self.logsToShip.sorted(by: { $0.0 < $1.0 }) {
+                let logData = self.dataToShip(log.1)
+                outputData.append(logData)
+                sentKeys.append(log.0)
+            }
+            
+            do {
+                try outputData.write(to: filename, options: [])
+                self.socketManager.post(url: self.postUrl, filename: filename, token: self.logzioTokenKey, completionHandler: { error in
+                    // remove our log file
+                    try? FileManager.default.removeItem(at: filename)
+                    
+                    // alert our caller
+                    guard error == nil else {
+                        completionHandler(error)
+                        return
+                    }
+                    
+                    // purge our log dictionary
+                    for key in sentKeys {
+                        self.logsToShip.removeValue(forKey: key)
+                    }
+                    completionHandler(nil)
+                })
+
+            } catch {
+                print(error.localizedDescription)
+            }
+            
+        }
+        
+    }
+    
     func addLog(_ dict: [String: Any]) {
         let time = mach_absolute_time()
         let logTag = Int(truncatingIfNeeded: time)
@@ -110,12 +175,21 @@ public class LogstashDestination: BaseDestination  {
         
         return data
     }
-    
+ 
+    func getDocumentsDirectory() -> URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        return paths[0]
+    }
 }
+
 
 // MARK: - GCDAsyncSocketManager Delegate
 
 extension LogstashDestination: AsyncSocketManagerDelegate {
+    
+//    func socketDidConnect(_ socket: GCDAsyncSocket) {
+//        self.postLogs()
+//    }
     
     func socket(_ socket: GCDAsyncSocket, didWriteDataWithTag tag: Int) {
         logDispatchQueue.addOperation {

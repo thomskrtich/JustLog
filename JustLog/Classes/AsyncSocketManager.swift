@@ -66,6 +66,38 @@ class AsyncSocketManager: NSObject {
             print("🔌 <AsyncSocket>, logstash connection was not secure, could not send logs")
         }
     }
+    
+    func post(url: URL, filename: URL, token: String, completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+        //create the session object
+        let session = URLSession.shared
+        
+        //now create the URLRequest object using the url object
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST" //set http method as POST
+        
+        var data = try! String(contentsOf: filename).data(using: String.Encoding.utf8)!
+        let boundary = "Snowbot-\(NSUUID().uuidString)"
+        //data.append("--\(boundary)--\r\n".data(using: String.Encoding.utf8)!)
+        
+        if !token.isEmpty { request.addValue("Basic \(token)", forHTTPHeaderField: "Authentication") }
+        request.addValue("\(Bundle.main.infoDictionary!["CFBundleName"] as! String)", forHTTPHeaderField: "App-ID")
+        request.addValue("multipart/form-dataoundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.addValue("attachment; filename=\(filename.lastPathComponent)", forHTTPHeaderField: "Content-Disposition")
+        request.addValue(String(data.count), forHTTPHeaderField: "Content-Length")
+        
+        request.httpBody = data
+        
+        //create dataTask using the session object to send data to the server
+        let task = session.dataTask(with: request as URLRequest, completionHandler: { data, response, error in
+            guard error == nil else {
+                completionHandler(error)
+                return
+            }
+            
+            completionHandler(nil)
+        })
+        task.resume()
+    }
 }
 
 // MARK: - Connection Management
