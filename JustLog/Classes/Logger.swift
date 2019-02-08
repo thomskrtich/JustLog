@@ -97,7 +97,7 @@ public final class Logger: NSObject {
             internalLogger.addDestination(logstash)
         }
         
-        dispatchTimer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(scheduledForceSend(_:)), userInfo: nil, repeats: true)
+        dispatchTimer = Timer.scheduledTimer(timeInterval: 10, target: self, selector: #selector(scheduledForceSend(_:)), userInfo: nil, repeats: true)
     }
     
     public func forceSend(_ completionHandler: @escaping (_ error: Error?) -> Void = {_ in }) {

@@ -23,7 +23,6 @@ public class LogstashDestination: BaseDestination  {
     var socketManager: AsyncSocketManager!
     private var useHttpPost: Bool = false
     private var postUrl: URL!
-    private var timeout: TimeInterval!
     
     @available(*, unavailable)
     override init() {
@@ -35,7 +34,6 @@ public class LogstashDestination: BaseDestination  {
         self.logActivity = logActivity
         self.logDispatchQueue.maxConcurrentOperationCount = 1
         self.useHttpPost = URL(string: host)?.scheme!.starts(with: "http") ?? false
-        self.timeout = timeout
         
         self.socketManager = AsyncSocketManager(host: host, port: port, timeout: timeout, delegate: self, logActivity: logActivity, allowUntrustedServer: allowUntrustedServer)
         
@@ -65,11 +63,11 @@ public class LogstashDestination: BaseDestination  {
                 flattened = flattened.merged(with: [logzioTokenKey: logzioToken])
             }
             
-            var now = NSDate()
-            var formatter = DateFormatter()
+            let now = Date()
+            let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
             formatter.timeZone = TimeZone(secondsFromGMT: 0)
-            flattened["@timestamp"] = formatter.string(from: Date())
+            flattened["@timestamp"] = formatter.string(from: now)
             
             addLog(flattened)
         }
@@ -130,7 +128,7 @@ public class LogstashDestination: BaseDestination  {
             
             do {
                 try outputData.write(to: filename, options: [])
-                self.socketManager.post(url: self.postUrl, filename: filename, token: self.logzioTokenKey, timeout: self.timeout, completionHandler: { error in
+                self.socketManager.post(url: self.postUrl, filename: filename, token: self.logzioTokenKey, timeout: 5, completionHandler: { error in
                     // remove our log file
                     try? FileManager.default.removeItem(at: filename)
                     
