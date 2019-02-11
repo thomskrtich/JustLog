@@ -44,6 +44,7 @@ public final class Logger: NSObject {
     public var logstashTimeout: TimeInterval = 20
     public var logLogstashSocketActivity: Bool = false
     public var logzioToken: String?
+    public var additionalHeaders: [String : String]?
 
     /**
      Default to `false`, if `true` untrusted certificates (as self-signed are) will be trusted
@@ -102,7 +103,7 @@ public final class Logger: NSObject {
     
     public func forceSend(_ completionHandler: @escaping (_ error: Error?) -> Void = {_ in }) {
         if enableLogstashLogging {
-            logstash.forceSend(completionHandler)
+            logstash.forceSend(self.additionalHeaders, completionHandler)
         }
     }
     

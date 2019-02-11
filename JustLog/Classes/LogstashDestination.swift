@@ -75,10 +75,10 @@ public class LogstashDestination: BaseDestination  {
         return nil
     }
 
-    public func forceSend(_ completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+    public func forceSend(_ additionalHeaders: [String:String]?, _ completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
         
         if self.logsToShip.count != 0 && self.useHttpPost {
-            self.postLogs(completionHandler)
+            self.postLogs(additionalHeaders, completionHandler)
             return
         }
         
@@ -109,7 +109,7 @@ public class LogstashDestination: BaseDestination  {
         }
     }
     
-    func postLogs(_ completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+    func postLogs(_ additionalHeaders: [String:String]?, _ completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
         
         self.logDispatchQueue.addOperation{ [weak self] in
             
@@ -128,7 +128,7 @@ public class LogstashDestination: BaseDestination  {
             
             do {
                 try outputData.write(to: filename, options: [])
-                self.socketManager.post(url: self.postUrl, filename: filename, token: self.logzioTokenKey, timeout: 5, completionHandler: { error in
+                self.socketManager.post(url: self.postUrl, headers: additionalHeaders, filename: filename, token: self.logzioTokenKey, timeout: 5, completionHandler: { error in
                     // remove our log file
                     try? FileManager.default.removeItem(at: filename)
                     
