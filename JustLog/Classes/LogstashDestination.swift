@@ -38,8 +38,7 @@ public class LogstashDestination: BaseDestination  {
         self.socketManager = AsyncSocketManager(host: host, port: port, timeout: timeout, delegate: self, logActivity: logActivity, allowUntrustedServer: allowUntrustedServer)
         
         if (self.useHttpPost) {
-            let url = String(format: "%@:%u", host, port)
-            self.postUrl = URL(string: url)!
+            self.postUrl = URL(string: host)
         }
     }
     
