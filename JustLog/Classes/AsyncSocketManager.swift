@@ -67,9 +67,10 @@ class AsyncSocketManager: NSObject {
         }
     }
     
-    func post(url: URL, headers: [String: String]?, filename: URL, token: String, timeout: TimeInterval, completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
+    func post(url: URL, headers: [String: String]?, filename: URL, timeout: TimeInterval, completionHandler: @escaping (_ error: Error?) -> Void  = {_ in }) {
         //create the session object
-        let session = URLSession.shared
+        let config = URLSessionConfiguration.default
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
         
         //now create the URLRequest object using the url object
         var request = URLRequest(url: url)
@@ -86,7 +87,6 @@ class AsyncSocketManager: NSObject {
         let boundary = "Snowbot-\(NSUUID().uuidString)"
         //data.append("--\(boundary)--\r\n".data(using: String.Encoding.utf8)!)
         
-        if !token.isEmpty { request.addValue("Basic \(token)", forHTTPHeaderField: "Authentication") }
         request.addValue("\(Bundle.main.infoDictionary!["CFBundleName"] as! String)", forHTTPHeaderField: "App-ID")
         request.addValue("multipart/form-dataoundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.addValue("attachment; filename=\(filename.lastPathComponent)", forHTTPHeaderField: "Content-Disposition")
@@ -193,4 +193,29 @@ extension AsyncSocketManager: GCDAsyncSocketDelegate {
         }
         completionHandler(self.allowUntrustedServer)
     }
+}
+
+extension AsyncSocketManager: URLSessionDelegate {
+    
+    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        if logActivity {
+            print("🔌 <URLSession>, session didFinishEvents")
+        }
+    }
+    
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if logActivity {
+            print("🔌 <URLSession>, session didReceive challenge")
+        }
+        
+        completionHandler(.performDefaultHandling, nil)
+    }
+    
+    func urlSession(_ session: URLSession, didBecomeInvalidWithError error: Error?) {
+        if logActivity {
+            print("🔌 <URLSession>, session didBecomeInvalidWithError")
+        }
+    }
+    
 }
