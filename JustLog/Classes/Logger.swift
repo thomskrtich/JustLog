@@ -20,7 +20,7 @@ public final class Logger: NSObject {
         case info
     }
     
-    public var logTypeKey = "log_type"
+    public var logTypeKey = "level"
     
     public var fileKey = "file"
     public var functionKey = "function"
@@ -119,28 +119,28 @@ extension Logger: Logging {
     public func verbose(_ message: String, error: NSError?, userInfo: [String : Any]?, _ file: StaticString, _ function: StaticString, _ line: UInt) {
         let file = String(describing: file)
         let function = String(describing: function)
-        let updatedUserInfo = [logTypeKey: "verbose"].merged(with: userInfo ?? [String : String]())
+        let updatedUserInfo = [logTypeKey: "V"].merged(with: userInfo ?? [String : String]())
         log(.verbose, message, error: error, userInfo: updatedUserInfo, file, function, line)
     }
     
     public func debug(_ message: String, error: NSError?, userInfo: [String : Any]?, _ file: StaticString, _ function: StaticString, _ line: UInt) {
         let file = String(describing: file)
         let function = String(describing: function)
-        let updatedUserInfo = [logTypeKey: "debug"].merged(with: userInfo ?? [String : String]())
+        let updatedUserInfo = [logTypeKey: "D"].merged(with: userInfo ?? [String : String]())
         log(.debug, message, error: error, userInfo: updatedUserInfo, file, function, line)
     }
     
     public func info(_ message: String, error: NSError?, userInfo: [String : Any]?, _ file: StaticString, _ function: StaticString, _ line: UInt) {
         let file = String(describing: file)
         let function = String(describing: function)
-        let updatedUserInfo = [logTypeKey: "info"].merged(with: userInfo ?? [String : String]())
+        let updatedUserInfo = [logTypeKey: "I"].merged(with: userInfo ?? [String : String]())
         log(.info, message, error: error, userInfo: updatedUserInfo, file, function, line)
     }
     
     public func warning(_ message: String, error: NSError?, userInfo: [String : Any]?, _ file: StaticString, _ function: StaticString, _ line: UInt) {
         let file = String(describing: file)
         let function = String(describing: function)
-        let updatedUserInfo = [logTypeKey: "warning"].merged(with: userInfo ?? [String : String]())
+        let updatedUserInfo = [logTypeKey: "W"].merged(with: userInfo ?? [String : String]())
         log(.warning, message, error: error, userInfo: updatedUserInfo, file, function, line)
 
     }
@@ -148,7 +148,7 @@ extension Logger: Logging {
     public func error(_ message: String, error: NSError?, userInfo: [String : Any]?, _ file: StaticString, _ function: StaticString, _ line: UInt) {
         let file = String(describing: file)
         let function = String(describing: function)
-        let updatedUserInfo = [logTypeKey: "error"].merged(with: userInfo ?? [String : Any]())
+        let updatedUserInfo = [logTypeKey: "E"].merged(with: userInfo ?? [String : Any]())
         log(.error, message, error: error, userInfo: updatedUserInfo, file, function, line)
     }
     
